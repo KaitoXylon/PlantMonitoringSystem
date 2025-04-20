@@ -1,0 +1,117 @@
+import os
+import datetime
+from supabase import create_client, Client
+from transformers import MobileNetV2ImageProcessor, AutoModelForImageClassification
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from PIL import Image
+from io import BytesIO
+import gradio as gr
+import torch
+import pandas as pd
+
+# Fetch environment variables for Supabase
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+
+# Ensure Supabase URL and Key are provided
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("Supabase URL and Key must be provided as environment variables.")
+
+# Initialize Supabase client
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Initialize model for image processing
+processor = MobileNetV2ImageProcessor.from_pretrained("linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification")
+image_model = AutoModelForImageClassification.from_pretrained("linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification")
+
+# Initialize model for insights and advice
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+text_model = AutoModelForCausalLM.from_pretrained("gpt2")
+
+def fetch_sensor_data():
+    try:
+        response = supabase.table('sensor').select('*').order('timestamp', desc=True).limit(1).execute()
+        if response.data:
+            return response.data[0]
+        else:
+            return None
+    except Exception as e:
+        print(f"Error fetching sensor data: {e}")
+        return None
+
+def analyze_image(image):
+    try:
+        # Analyze image
+        inputs = processor(images=image, return_tensors='pt')
+        with torch.no_grad():
+            outputs = image_model(**inputs)
+        logits = outputs.logits
+        predicted_class_idx = logits.argmax(-1).item()
+        health_status = image_model.config.id2label[predicted_class_idx]
+        return health_status
+    except Exception as e:
+        print(f"Error analyzing image: {e}")
+        return "Error analyzing image"
+
+def generate_insight(sensor_data, health_status):
+    try:
+        combined_input = f"Sensor Data: {sensor_data}\nPlant Health Status: {health_status}"
+        inputs = tokenizer.encode(combined_input, return_tensors='pt')
+        outputs = text_model.generate(inputs, max_length=200)
+        advice = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return advice
+    except Exception as e:
+        print(f"Error generating insight: {e}")
+        return "Error generating insight"
+
+def process_and_save_results(image):
+    # Fetch sensor data
+    sensor_data = fetch_sensor_data()
+    if not sensor_data:
+        return "No sensor data available."
+
+    # Analyze the uploaded image
+    health_status = analyze_image(image)
+    if health_status == "Error analyzing image":
+        return health_status
+
+    # Generate advice based on sensor data and health status
+    advice = generate_insight(sensor_data, health_status)
+    if advice == "Error generating insight":
+        return advice
+
+    # Prepare results
+    try:
+        result = {
+            'timestamp': datetime.datetime.utcnow().isoformat(),
+            'sensor_data': sensor_data,
+            'plant_image': 'uploaded_image',
+            'health_status': health_status,
+            'advice': advice
+        }
+        # Save to Supabase 'results' table
+        supabase.table('results').insert(result).execute()
+        display_result = {
+            'Image Name': 'uploaded_image',
+            'Health Status': health_status,
+            'Advice': advice
+        }
+        return pd.DataFrame([display_result])
+    except Exception as e:
+        print(f"Error saving results to Supabase: {e}")
+        return f"Error saving results to Supabase: {e}"
+
+def main():
+    iface = gr.Interface(
+        fn=process_and_save_results,
+        inputs=gr.Image(label="Upload an Image"),
+        outputs="dataframe",
+        title="Plant Health Analysis and Insights",
+        description="Upload a plant image and click the button to analyze plant health and generate insights.",
+        flagging_dir="/workspace/flagged"
+    )
+
+    iface.launch(server_name="0.0.0.0")
+
+if __name__ == "__main__":
+    main()
