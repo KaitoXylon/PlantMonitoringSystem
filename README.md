@@ -1,9 +1,39 @@
-This is a Plant Monitoring system where I get data from sensors(DHT11,soil Moisture, light sensor) and sent it to a database (Supabase) and store the data and send it to web dashboard for monitoring.
-![image](https://github.com/user-attachments/assets/20504ac4-e590-423b-a659-1dcffdea2e24)
-Language: javaScript
+# 🌿 AI-Powered Plant Monitoring System
 
-to run: 
- 1. go to https://radiant-haupia-4b5ed2.netlify.app/?fbclid=IwY2xjawJx-QJleHRuA2FlbQIxMAABHq1cUmMUDxjGOF-JySE_OYBkNiAXAr3XxwqzD90h87vOoncibsFwfN2gR_u6_aem_0JGfqXzfIIS0LsK4llAf1A.
+This is a smart plant monitoring system that uses **ESP32**, **DHT11**, **soil moisture sensor**, and a **camera with YOLOv8** to monitor plant health in real time.
 
-I am working on it to do image recognition to detect plant health and analysis sensor data with AI to get the condition of the plant and give advise accoring to it.
+📽️ **Demo Video:**  
+[Watch on Google Drive](https://drive.google.com/file/d/1nvolcwCWKHbaO9WdOTQHRexdsP1rA0Kn/view?usp=sharing)
+
+---
+
+## 🔧 Features
+
+- 📡 Real-time data from DHT11 (temperature, humidity) and soil moisture sensor  
+- 📷 YOLOv8 detects leaf diseases via camera  
+- 📊 Web dashboard (Supabase) shows live data  
+- 🧠 LLM analyzes sensor + image data to provide suggestions
+
+---
+
+## 🔌 Tech Stack
+
+- Hardware: ESP32, DHT11, Soil Sensor, Camera  
+- Cloud: Supabase (DB + storage)  
+- AI: YOLOv8, LLM (LLM via OpenRouter)
+
+---
+
+## 📈 Output
+
+- Visual + sensor data stored in Supabase  
+- Dashboard shows real-time conditions  
+- AI generates health report and advice
+
+---
+
+## Future Plan
+
+- Currently working on the AI anaysis for accurate prdiction and advice.
+
 
