@@ -34,6 +34,6 @@ This is a smart plant monitoring system that uses **ESP32**, **DHT11**, **soil m
 
 ## Future Plan
 
-- Currently working on the AI anaysis for accurate prdiction and advice.
+- Currently working on the AI anaysis for accurate prediction and advice.
 
 
